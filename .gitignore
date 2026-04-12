@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Environment — NEVER commit .env
+.env
+.env.*
+!.env.example
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# ML models — store in S3, not git
+ml/models/*.pkl
+ml/models/*.joblib
+mlruns/
+
+# Logs
+*.log
+
+# Terraform state
+infrastructure/.terraform/
+infrastructure/terraform.tfstate*
+infrastructure/*.tfvars
+!infrastructure/terraform.tfvars.example
+
+# Node
+node_modules/
+frontend/dist/
+frontend/build/
+
+# Test coverage
+htmlcov/
+.coverage
+
+# Secrets
+*.pem
+*.key
+*.crt
