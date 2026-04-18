@@ -4,7 +4,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
-from app.api.v1.endpoints import auth
+from app.api.v1.endpoints import auth, transactions
 from app.core.config import settings
 
 limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
@@ -39,3 +39,4 @@ def health_check():
 
 
 app.include_router(auth.router, prefix=settings.api_v1_prefix)
+app.include_router(transactions.router, prefix=settings.api_v1_prefix)
