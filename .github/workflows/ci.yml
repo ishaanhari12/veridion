@@ -27,7 +27,6 @@ jobs:
           --health-retries 5
 
     env:
-      # In CI, postgres runs on localhost (not a docker service named 'db')
       DATABASE_URL: postgresql://veridion:veridion_secret@localhost:5432/veridion
       TEST_DATABASE_URL: postgresql://veridion:veridion_secret@localhost:5432/veridion_test
       SECRET_KEY: ci_test_secret_key_32_characters_minimum_length
@@ -36,6 +35,8 @@ jobs:
       REFRESH_TOKEN_EXPIRE_DAYS: 7
       ENVIRONMENT: test
       FRAUD_SERVICE_URL: http://localhost:8001
+      FRAUD_BLOCK_THRESHOLD: "0.85"
+      FRAUD_FLAG_THRESHOLD: "0.50"
 
     steps:
       - uses: actions/checkout@v4
@@ -49,19 +50,22 @@ jobs:
       - name: Install dependencies
         run: cd backend && pip install -r requirements.txt
 
-      - name: Create test database
-        run: |
-          PGPASSWORD=veridion_secret psql -h localhost -U veridion -d veridion -c "CREATE DATABASE veridion_test;"
+      - name: Install security tools
+        run: pip install bandit==1.7.8
 
       - name: Run Bandit security scan
         run: |
-          pip install bandit
-          bandit -r backend/app -ll -ii
+          bandit -r backend/app             -ll             -ii             --exclude backend/app/tests             -f txt
+        continue-on-error: false
+
+      - name: Create test database
+        run: |
+          PGPASSWORD=veridion_secret psql             -h localhost             -U veridion             -d veridion             -c "CREATE DATABASE veridion_test;"
 
       - name: Run migrations
         run: cd backend && alembic upgrade head
 
-      - name: Run tests
+      - name: Run full test suite
         run: cd backend && pytest tests/ -v --tb=short
 
   docker-build:
