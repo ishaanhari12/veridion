@@ -71,11 +71,15 @@ they are always identical. This prevents training-serving skew.
 
 ## Model performance
 
-*Updated after training in Phase 4*
+Trained on 284,807 real credit card transactions (Kaggle Credit Card Fraud dataset).
 
 | Metric | Isolation Forest | XGBoost | Ensemble |
-|---|---|---|---|
-| Precision | — | — | — |
-| Recall | — | — | — |
-| F1 Score | — | — | — |
-| AUC-ROC | — | — | — |
+|--------|-----------------|---------|----------|
+| AUC-ROC | 0.9416 | 0.9818 | 0.9654 |
+| Precision | — | 0.4183 | 0.5305 |
+| Recall | — | 0.8878 | 0.8878 |
+| F1 Score | — | 0.5686 | 0.6641 |
+
+**Ensemble:** 30% Isolation Forest + 70% XGBoost  
+**Fraud rate in dataset:** 0.1727% (492 fraud cases)  
+**SMOTE oversampling** applied to handle class imbalance.
