@@ -48,8 +48,10 @@ class FraudClient:
                 )
                 response.raise_for_status()
                 return response.json()
-        except Exception:
+            
+        except Exception as e:
             # Fraud service is down — fail open, flag for review
+            print(f"[FraudClient] ERROR calling fraud service: {type(e).__name__}: {e}")
             return {
                 "transaction_id": transaction_id,
                 "fraud_score": 0.5,
