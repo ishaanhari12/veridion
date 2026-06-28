@@ -79,6 +79,26 @@ export default function Dashboard() {
         <p className="text-4xl font-bold">£{parseFloat(balance || 0).toFixed(2)}</p>
       </div>
 
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 text-center">
+          <p className="text-2xl font-bold">{transactions.length}</p>
+          <p className="text-gray-400 text-xs mt-1">Total Transactions</p>
+        </div>
+        <div className="bg-gray-900 border border-yellow-900 rounded-2xl p-4 text-center">
+          <p className="text-2xl font-bold text-yellow-400">
+            {transactions.filter(t => t.status === 'flagged').length}
+          </p>
+          <p className="text-gray-400 text-xs mt-1">Flagged</p>
+        </div>
+        <div className="bg-gray-900 border border-red-900 rounded-2xl p-4 text-center">
+          <p className="text-2xl font-bold text-red-400">
+            {transactions.filter(t => t.status === 'blocked').length}
+          </p>
+          <p className="text-gray-400 text-xs mt-1">Blocked</p>
+        </div>
+      </div>
+
       {message && (
         <div className="bg-blue-900 border border-blue-700 rounded-lg p-3 mb-6 text-sm">
           {message}
