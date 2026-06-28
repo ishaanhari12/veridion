@@ -162,7 +162,13 @@ export default function Dashboard() {
             {transactions.map(tx => (
               <div key={tx.id} className="flex justify-between items-center border-b border-gray-800 pb-3">
                 <div>
-                  <p className="text-sm font-medium capitalize">{tx.transaction_type}</p>
+                  <p className="text-sm font-medium capitalize">
+                    {tx.transaction_type === 'transfer' && tx.sender_id === user.id
+                      ? '↑ Transfer Out'
+                      : tx.transaction_type === 'transfer'
+                      ? '↓ Transfer In'
+                      : '↓ Deposit'}
+                  </p>
                   <p className="text-xs text-gray-500">{new Date(tx.created_at).toLocaleString()}</p>
                   {tx.fraud_score && (
                     <p className={`text-xs ${fraudColour(tx.fraud_score)}`}>
