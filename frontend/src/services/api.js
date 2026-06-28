@@ -24,6 +24,10 @@ export const api = {
   me: () =>
     fetch(`${BASE}/auth/me`, { headers: authHeaders() }).then(r => r.json()),
 
+  wallet: () =>
+    fetch(`${BASE}/auth/me/wallet`, { headers: authHeaders() }).then(r => r.json()),
+
+  
   // Transactions
   deposit: (amount) =>
     fetch(`${BASE}/transactions/deposit`, {

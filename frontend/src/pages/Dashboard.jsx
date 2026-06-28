@@ -16,8 +16,8 @@ export default function Dashboard() {
   const [message, setMessage] = useState('')
 
   const loadData = async () => {
-    const [me, hist] = await Promise.all([api.me(), api.history()])
-    setBalance(me.wallet_balance)
+    const [wallet, hist] = await Promise.all([api.wallet(), api.history()])
+    setBalance(wallet.balance)
     setTransactions(hist.items || [])
     setLoading(false)
   }
