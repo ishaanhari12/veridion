@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import Dashboard from './pages/Dashboard'
 
 function AppContent() {
   const { user, loading } = useAuth()
@@ -21,11 +22,7 @@ function AppContent() {
       : <Login onSwitch={() => setShowRegister(true)} />
   }
 
-  return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-      <p className="text-white text-xl">Welcome, {user.full_name} — Dashboard coming next</p>
-    </div>
-  )
+  return <Dashboard />
 }
 
 export default function App() {
