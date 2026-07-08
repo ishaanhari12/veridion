@@ -1,135 +1,51 @@
 # Veridion — Fintech Fraud Detection Platform
 
-> Full-stack fintech platform simulating real-world payment infrastructure
-> with real-time ML fraud detection, enterprise-grade security, and AWS deployment.
+![CI](https://github.com/ishaanhari12/veridion/actions/workflows/ci.yml/badge.svg)
+![Python](https://img.shields.io/badge/python-3.11-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green)
+![React](https://img.shields.io/badge/React-18-61DAFB)
+![AWS](https://img.shields.io/badge/AWS-EC2%20%7C%20RDS%20%7C%20S3-orange)
+![Terraform](https://img.shields.io/badge/Terraform-1.x-purple)
 
-[![CI](https://github.com/yourusername/veridion/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/veridion/actions)
-[![Security: Bandit](https://img.shields.io/badge/security-bandit%20scanned-brightgreen)](docs/security.md)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.110-green)](https://fastapi.tiangolo.com)
-
----
-
-## Live Demo
-**Coming in Phase 6 — AWS deployment**
-
----
-
-## Quick Start
-
-```bash
-# 1. Copy and configure environment
-cp backend/.env.example backend/.env
-# Generate secret key and paste into .env as SECRET_KEY:
-python -c "import secrets; print(secrets.token_hex(32))"
-
-# 2. Start the full stack (API + PostgreSQL + Fraud service)
-docker compose up --build
-
-# 3. Run database migrations (second terminal)
-docker exec veridion_api alembic revision --autogenerate -m "initial"
-docker exec veridion_api alembic upgrade head
-
-# 4. Run the test suite
-docker exec veridion_api pytest tests/ -v
-
-# 5. Open interactive API docs
-open http://localhost:8000/docs
-```
+A production-grade fraud detection platform built to demonstrate full-stack fintech engineering, ML, and cloud deployment skills.
 
 ---
 
 ## What It Does
 
-Veridion simulates a production-grade fintech payment platform with:
+Veridion is a real-time payment platform that scores every transaction for fraud using a trained ML ensemble model before money moves.
 
-- **Secure wallet system** — deposit, withdraw, peer-to-peer transfers
-- **ACID-compliant transactions** — atomic debit/credit, no double-spending
-- **Real-time fraud detection** — every transfer scored 0–1 before money moves
-- **Auto-blocking** — transfers above risk threshold blocked automatically
-- **Full audit trail** — every action logged with user, IP, and timestamp
-- **Admin dashboard** — React frontend with fraud analytics (Phase 5)
-- **Cloud-native** — deployed on AWS with Terraform IaC (Phase 6)
+- Users register, authenticate with JWT, and manage a wallet
+- Deposits and transfers are processed atomically (ACID transactions)
+- Every transfer is scored by an **Isolation Forest + XGBoost ensemble** trained on 284,807 real credit card transactions
+- Transactions are automatically **blocked** (score ≥ 0.85), **flagged** (score ≥ 0.50), or **completed** (score < 0.50)
+- A React dashboard shows live balances, fraud scores, and transaction history with colour-coded risk levels
 
 ---
 
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Backend | Python 3.11, FastAPI, SQLAlchemy, Alembic |
-| Auth | JWT (PyJWT), bcrypt, RBAC (3 roles) |
-| Database | PostgreSQL (primary), DynamoDB (Phase 6) |
-| ML | Scikit-learn, XGBoost, MLflow (Phase 4) |
-| Frontend | React 18, Tailwind CSS, Recharts (Phase 5) |
-| Infrastructure | AWS (EC2, RDS, Lambda, API Gateway, S3), Terraform |
-| DevOps | Docker, GitHub Actions CI/CD |
-| Security | OWASP ZAP, Bandit, slowapi, Pydantic v2 |
-
----
-
-## Project Structure
+## Architecture
 
 ```
-veridion/
-├── backend/              # FastAPI application
-│   ├── app/
-│   │   ├── api/v1/       # Route handlers with rate limiting
-│   │   ├── core/         # Config, JWT, RBAC, security
-│   │   ├── db/           # Database session
-│   │   ├── models/       # SQLAlchemy ORM models
-│   │   ├── schemas/      # Pydantic request/response schemas
-│   │   └── services/     # Business logic layer
-│   └── tests/            # 55+ tests across auth, transactions, security
-├── ml/                   # Fraud detection service
-│   └── src/              # FastAPI inference endpoint
-├── docs/                 # Architecture diagrams, security audit
-├── infrastructure/       # Terraform AWS config (Phase 6)
-└── .github/workflows/    # CI/CD pipelines
+React Dashboard (Vite + Tailwind)
+        │
+        ▼
+FastAPI Backend (JWT Auth, RBAC, Rate Limiting)
+        │                         │
+        ▼                         ▼
+PostgreSQL (AWS RDS)     Fraud ML Service
+                         (Isolation Forest + XGBoost)
+                                  │
+                                  ▼
+                           S3 (Model Storage)
 ```
 
----
-
-## API Endpoints
-
-### Authentication
-| Method | Endpoint | Description | Rate Limit |
-|---|---|---|---|
-| POST | /api/v1/auth/register | Register new user | 10/min |
-| POST | /api/v1/auth/login | Login, get JWT tokens | 10/min |
-| POST | /api/v1/auth/refresh | Refresh access token | 20/min |
-| GET | /api/v1/auth/me | Get current user profile | 60/min |
-| GET | /api/v1/auth/me/wallet | Get wallet balance | 60/min |
-
-### Transactions
-| Method | Endpoint | Description | Rate Limit |
-|---|---|---|---|
-| POST | /api/v1/transactions/deposit | Add funds to wallet | 30/min |
-| POST | /api/v1/transactions/withdraw | Withdraw funds | 30/min |
-| POST | /api/v1/transactions/transfer | Transfer to another user | 20/min |
-| GET | /api/v1/transactions/history | Paginated history | 60/min |
-| PATCH | /api/v1/transactions/{id}/status | Admin: update status | 60/min |
-
----
-
-## Security
-
-See [docs/security.md](docs/security.md) for full details.
-
-- Bandit static analysis — zero high-severity findings
-- OWASP ZAP dynamic scan — clean report (coming Phase 3 completion)
-- bcrypt password hashing
-- JWT with refresh token rotation
-- Rate limiting on all endpoints
-- Security headers on every response
-- Input validation via Pydantic v2
-- Full audit logging for compliance
+All infrastructure provisioned with **Terraform** on AWS (EC2, RDS, S3, VPC).
 
 ---
 
 ## ML Model Performance
 
-Trained on 284,807 real credit card transactions (Kaggle Credit Card Fraud dataset).
+Trained on the [Kaggle Credit Card Fraud dataset](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud) — 284,807 transactions, 492 fraud cases (0.1727% fraud rate).
 
 | Metric | Isolation Forest | XGBoost | Ensemble |
 |--------|-----------------|---------|----------|
@@ -138,33 +54,102 @@ Trained on 284,807 real credit card transactions (Kaggle Credit Card Fraud datas
 | Recall | — | 0.8878 | 0.8878 |
 | F1 Score | — | 0.5686 | 0.6641 |
 
-**Ensemble:** 30% Isolation Forest + 70% XGBoost  
-**Fraud rate in dataset:** 0.1727% (492 fraud cases)  
-**SMOTE oversampling** applied to handle class imbalance.
+Ensemble weighting: **30% Isolation Forest + 70% XGBoost**. SMOTE oversampling applied to handle class imbalance.
 
 ---
 
-## Key Technical Decisions
+## Tech Stack
 
-**Why FastAPI over Flask?**
-Async support, automatic OpenAPI docs, and Pydantic v2 validation built in.
-Closer to what production fintech teams use.
+| Layer | Technology |
+|-------|-----------|
+| Backend | Python 3.11, FastAPI, SQLAlchemy, Alembic |
+| Auth | JWT, bcrypt, RBAC (user / analyst / admin) |
+| Database | PostgreSQL 16 |
+| ML | scikit-learn, XGBoost, MLflow, imbalanced-learn |
+| Frontend | React, Vite, Tailwind CSS |
+| Infrastructure | AWS EC2, RDS, S3, VPC, Terraform |
+| Security | Rate limiting, Bandit, security headers, Pydantic v2 |
+| CI/CD | GitHub Actions |
 
-**Why ACID-compliant atomic transactions?**
-In financial systems, partial writes are catastrophic. Every transfer wraps
-the debit and credit in a single database transaction that rolls back on
-any failure. No money is ever lost or duplicated.
+---
 
-**Why an ensemble ML model?**
-Isolation Forest catches statistical anomalies without labels.
-XGBoost provides calibrated fraud probabilities on labelled data.
-Combining both reduces false positives significantly.
+## Project Structure
 
-**Why Terraform?**
-Every AWS resource is reproducible, reviewable, and deployable in one command.
-No clicking through consoles — infrastructure is code.
+```
+veridion/
+├── backend/            # FastAPI application
+│   ├── app/
+│   │   ├── api/        # Endpoints (auth, transactions)
+│   │   ├── core/       # JWT, security, config
+│   │   ├── models/     # SQLAlchemy models
+│   │   └── services/   # Business logic, fraud client
+│   └── tests/          # 60+ tests
+├── ml/                 # Fraud detection microservice
+│   ├── src/            # FastAPI inference service
+│   └── notebooks/      # Training script (Colab)
+├── frontend/           # React dashboard
+│   └── src/
+│       ├── pages/      # Login, Register, Dashboard
+│       ├── context/    # Auth context
+│       └── services/   # API client
+└── infrastructure/     # Terraform (AWS)
+```
 
-**Why fail-open on fraud service outage?**
-A fraud service crash should never take down the payment system.
-If the ML service is unreachable, transactions are flagged for manual
-review rather than blocked entirely.
+---
+
+## Running Locally
+
+**Prerequisites:** Docker Desktop, Node.js
+
+```bash
+# Clone the repo
+git clone https://github.com/ishaanhari12/veridion.git
+cd veridion
+
+# Start backend + database + ML service
+docker compose up
+
+# Start frontend (separate terminal)
+cd frontend
+npm install
+npm run dev
+```
+
+Visit `http://localhost:5173` for the dashboard.
+API docs available at `http://localhost:8000/docs`.
+
+---
+
+## Key Engineering Decisions
+
+**Fail-open fraud design** — if the ML service is unreachable, transactions are flagged for review rather than blocking all payments. A fraud service outage should never take down the payment system.
+
+**ACID transactions** — every transfer debits the sender and credits the receiver in a single database transaction. Any failure rolls back completely — no partial transfers.
+
+**Training-serving feature parity** — `ml/src/features.py` defines the exact feature set used at both training and inference time, preventing training-serving skew.
+
+**Environment-aware rate limiting** — strict limits in production (10/min login), relaxed in development and test (1000/min) so tests are never blocked.
+
+---
+
+## Security
+
+- JWT access and refresh tokens
+- bcrypt password hashing (pinned to 4.0.1 for passlib compatibility)
+- Role-based access control (user / analyst / admin)
+- Rate limiting on all sensitive endpoints via slowapi
+- SQL injection protection via Pydantic v2 validation
+- Security headers middleware (X-Content-Type-Options, X-Frame-Options, etc.)
+- Bandit static analysis in CI pipeline
+
+See [docs/security.md](docs/security.md) for full details.
+
+---
+
+## Tests
+
+```bash
+docker compose exec api pytest tests/ -v
+```
+
+60+ tests covering auth flows, transaction logic, security headers, RBAC enforcement, injection attempts, and rate limiting.
