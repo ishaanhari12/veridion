@@ -1,77 +1,24 @@
-# Veridion Fraud Detection — ML Service
+# Veridion — Fraud Detection ML Service
 
-## Architecture
+A real-time fraud scoring microservice using an ensemble of Isolation Forest and XGBoost, trained on 284,807 real credit card transactions.
 
-The fraud detection system is a separate FastAPI microservice that:
+---
 
-1. Receives transaction features from the main API on every transfer
-2. Engineers features (amount z-score, velocity, time patterns)
-3. Scores using an ensemble of two models:
-   - **Isolation Forest** — unsupervised anomaly detection
-   - **XGBoost** — supervised fraud classifier
-4. Returns a combined fraud score 0.0–1.0
+## Model Architecture
 
-## Decision thresholds
+The ensemble combines two complementary approaches:
 
-| Score | Action |
-|---|---|
-| >= 0.85 | Transaction BLOCKED — money does not move |
-| >= 0.50 | Transaction FLAGGED — money moves, analyst reviews |
-| < 0.50 | Transaction COMPLETED — normal |
+**Isolation Forest (30% weight)** — unsupervised anomaly detection. Identifies statistically unusual transactions without needing labelled fraud examples. Catches novel fraud patterns the supervised model hasn't seen.
 
-## Training the model
+**XGBoost (70% weight)** — supervised classifier trained on labelled fraud data. Gives calibrated fraud probabilities based on historical patterns. Gets higher weight because labelled data produces more accurate predictions.
 
-### Step 1 — Open Google Colab
-Go to [colab.research.google.com](https://colab.research.google.com)
-and create a new notebook.
+Final score: `0.30 × iso_score + 0.70 × xgb_score`
 
-### Step 2 — Get your Kaggle API key
-- Go to kaggle.com → Your profile → Account → API → Create New Token
-- This downloads `kaggle.json`
+---
 
-### Step 3 — Run the training notebook
-Open `notebooks/fraud_detection_training.py` and paste each cell
-into Colab in order. Run them top to bottom.
+## Performance
 
-The notebook will:
-- Download the Credit Card Fraud dataset (284,807 transactions)
-- Engineer features matching the live inference pipeline
-- Handle class imbalance with SMOTE
-- Train Isolation Forest + XGBoost
-- Evaluate the ensemble
-- Save two model files
-
-### Step 4 — Download model files
-From the Colab Files panel, download:
-- `isolation_forest.joblib`
-- `xgboost_model.joblib`
-
-### Step 5 — Add to project
-Place both files in `veridion/ml/models/`.
-
-### Step 6 — Rebuild
-```bash
-docker compose up --build
-```
-
-The fraud service detects the model files on startup and switches
-from placeholder mode to real model mode automatically.
-
-Verify it loaded:
-```bash
-curl http://localhost:8001/health
-```
-Should show `"model_loaded": true`.
-
-## Feature engineering
-
-Features are defined in `src/features.py`. The same function is used
-during training (notebook) and inference (live API), guaranteeing
-they are always identical. This prevents training-serving skew.
-
-## Model performance
-
-Trained on 284,807 real credit card transactions (Kaggle Credit Card Fraud dataset).
+Trained on the [Kaggle Credit Card Fraud dataset](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud).
 
 | Metric | Isolation Forest | XGBoost | Ensemble |
 |--------|-----------------|---------|----------|
@@ -80,6 +27,78 @@ Trained on 284,807 real credit card transactions (Kaggle Credit Card Fraud datas
 | Recall | — | 0.8878 | 0.8878 |
 | F1 Score | — | 0.5686 | 0.6641 |
 
-**Ensemble:** 30% Isolation Forest + 70% XGBoost  
-**Fraud rate in dataset:** 0.1727% (492 fraud cases)  
-**SMOTE oversampling** applied to handle class imbalance.
+- Dataset: 284,807 transactions, 492 fraud cases (0.1727% fraud rate)
+- SMOTE oversampling applied (sampling_strategy=0.1) to handle class imbalance
+- Train/test split: 80/20 stratified
+
+---
+
+## Fraud Decision Gate
+
+Scores feed into the transaction service with these thresholds:
+
+| Score | Decision |
+|-------|----------|
+| ≥ 0.85 | BLOCKED — money does not move |
+| ≥ 0.50 | FLAGGED — money moves, marked for review |
+| < 0.50 | COMPLETED — normal transaction |
+
+---
+
+## Features
+
+The model uses V1-V28 (PCA components from the original dataset) plus engineered features:
+
+| Feature | Description |
+|---------|-------------|
+| amount_log | Log-transformed amount (handles skew) |
+| amount_zscore | How unusual the amount is statistically |
+| is_night | Transaction between 10pm and 6am |
+| is_weekend | Saturday or Sunday |
+| is_high_amount | Amount above £1,000 |
+| is_round_number | Amount divisible by 10 (common in fraud) |
+| hour_of_day | Hour of the transaction |
+| day_of_week | Day of the week |
+
+Feature engineering is defined in `src/features.py` and used identically at training and inference time to prevent training-serving skew.
+
+---
+
+## Service Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Service status and model version |
+| `/predict` | POST | Score a transaction |
+| `/reload` | POST | Reload models from disk |
+
+**Health response:**
+```json
+{
+  "status": "healthy",
+  "service": "fraud-detection",
+  "model_loaded": true,
+  "model_version": "ensemble-v1"
+}
+```
+
+---
+
+## Fail-Open Design
+
+If the fraud service is unreachable, the API backend returns a score of 0.5 and flags the transaction for manual review rather than blocking all payments. A fraud service outage should never take down the payment system.
+
+---
+
+## Training
+
+The model was trained in Google Colab. The training script is at `notebooks/fraud_detection_training.py` — each section is a separate Colab cell. Models are saved as `isolation_forest.joblib` and `xgboost_model.joblib` and stored in AWS S3 for production use.
+
+---
+
+## Running Locally
+
+```bash
+docker compose up
+curl http://localhost:8001/health
+```
