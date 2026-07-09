@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'
+const BASE = 'http://16.61.194.22:8000/api/v1'
 
 const authHeaders = () => ({
   'Content-Type': 'application/json',
